@@ -1,0 +1,17 @@
+pricewatcher_api/log/
+pricewatcher_api/tmp/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store
