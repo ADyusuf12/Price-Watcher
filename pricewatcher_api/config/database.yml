@@ -1,0 +1,29 @@
+# PostgreSQL configuration for Rails
+# Uses environment variables from .env for credentials and host info
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  username: <%= ENV["DB_USER"] %>
+  password: <%= ENV["DB_PASSWORD"] %>
+  host: <%= ENV["DB_HOST"] %>
+  port: <%= ENV["DB_PORT"] %>
+
+development:
+  <<: *default
+  database: <%= ENV["DB_NAME"] %>
+
+# Keep a separate test database so test runs don't overwrite development data
+test:
+  <<: *default
+  database: <%= ENV["DB_NAME"] %>_test
+
+# Production should also use environment variables for safety
+production:
+  <<: *default
+  database: <%= ENV["DB_NAME"] %>
+  username: <%= ENV["DB_USER"] %>
+  password: <%= ENV["DB_PASSWORD"] %>
+  host: <%= ENV["DB_HOST"] %>
+  port: <%= ENV["DB_PORT"] %>
