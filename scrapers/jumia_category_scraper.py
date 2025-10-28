@@ -14,31 +14,25 @@ def get_category_products(category_url, max_pages=1):
         r = requests.get(url, headers=headers)
         soup = BeautifulSoup(r.text, "lxml")
 
-        for card in soup.select("article.prd a.core"):
-            product = {}
+        for card in soup.select("article.prd"):
+            link_tag = card.select_one("a.core")
+            href = link_tag.get("href") if link_tag else None
+            title_tag = card.select_one("div.name")
+            img_tag = card.select_one("img")
 
-            # URL
-            href = card.get("href")
-            product["url"] = BASE_URL + href if href else None
+            image = None
+            if img_tag:
+                image = img_tag.get("data-src") or img_tag.get("src")
 
-            # Title
-            name_tag = card.select_one("div.name")
-            product["title"] = name_tag.get_text(strip=True) if name_tag else None
-
-            # Current price
-            price_tag = card.select_one("div.prc")
-            product["price"] = price_tag.get_text(strip=True) if price_tag else None
-
-            # Old price (from attribute)
-            product["old_price"] = price_tag["data-oprc"] if price_tag and price_tag.has_attr("data-oprc") else None
-
-            # Discount
-            discount_tag = card.select_one("div.bdg._dsct")
-            product["discount"] = discount_tag.get_text(strip=True) if discount_tag else None
+            product = {
+                "url": BASE_URL + href if href else None,
+                "title": title_tag.get_text(strip=True) if title_tag else None,
+                "image": image
+            }
 
             products.append(product)
 
-        time.sleep(2)  # polite delay
+        time.sleep(2)
 
     return products
 

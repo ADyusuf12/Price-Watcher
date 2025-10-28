@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, UTC
 from jumia_category_scraper import get_category_products
 from jumia_detail_scraper import scrape_product
 import psycopg2
@@ -17,10 +17,27 @@ def scrape_category_with_details(category_url, max_pages=1, limit=10):
         print(f"\nScraping detail page {i+1}/{len(products)}: {product['url']}")
         details = scrape_product(product["url"])
 
+        def normalize_price(p):
+            if not p:
+                return None
+            return int(p.replace("₦", "").replace(",", "").strip())
+
+        current_price = normalize_price(details.get("price"))
+        old_price = normalize_price(details.get("old_price"))
+
+        discount = None
+        if current_price and old_price and old_price > current_price:
+            percent = round((old_price - current_price) / old_price * 100)
+            discount = f"{percent}%"
+
         merged = {
             **product,
             **details,
-            "scraped_at": datetime.utcnow().isoformat()
+            "price": current_price,
+            "old_price": old_price,
+            "discount": discount,
+            "scraped_at": datetime.now(UTC).isoformat(),
+            "source": "jumia"
         }
         results.append(merged)
         time.sleep(2)
@@ -38,22 +55,18 @@ def save_to_postgres(data):
     cur = conn.cursor()
 
     for item in data:
-        # Normalize prices into integers
-        def normalize_price(p):
-            if not p:
-                return None
-            return int(p.replace("₦", "").replace(",", "").strip())
-
         cur.execute("""
-            INSERT INTO products (url, title, price, old_price, discount, scraped_at)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO products (url, title, price, old_price, discount, scraped_at, image, source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, (
             item["url"],
             item["title"],
-            normalize_price(item["price"]),
-            normalize_price(item["old_price"]),
+            item["price"],
+            item["old_price"],
             item["discount"],
-            item["scraped_at"]
+            item["scraped_at"],
+            item["image"],
+            item["source"]
         ))
 
     conn.commit()
