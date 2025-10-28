@@ -35,9 +35,9 @@ def scrape_product(url_or_file, from_file=False):
 
 if __name__ == "__main__":
     # Example: scrape from a saved file
-    result = scrape_product("jumia_product.html", from_file=True)
-    print(result)
+    # result = scrape_product("jumia_product.html", from_file=True)
+    # print(result)
 
     # Example: scrape live from URL
-    # url = "https://www.jumia.com.ng/xiaomi-redmi-note-14-6.67-8gb-ram256-gb-rom-hyperos-108mp-ai-camera-midnight-black-401065205.html"
-    # print(scrape_product(url))
+    url = "https://www.jumia.com.ng/xiaomi-redmi-note-14-6.67-8gb-ram256-gb-rom-hyperos-108mp-ai-camera-midnight-black-401065205.html"
+    print(scrape_product(url))
