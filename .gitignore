@@ -15,3 +15,7 @@ venv/
 
 # OS files
 .DS_Store
+
+# Scraper checkpoints
+jumia_checkpoint.txt
+konga_checkpoint.txt
