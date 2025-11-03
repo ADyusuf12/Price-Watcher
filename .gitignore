@@ -1,5 +1,7 @@
+# Rails logs and tmp
 pricewatcher_api/log/
 pricewatcher_api/tmp/
+
 # Python
 __pycache__/
 *.pyc
@@ -9,9 +11,14 @@ __pycache__/
 # Virtual environments
 venv/
 .env
+.env.*
 
 # VSCode
 .vscode/
 
 # OS files
 .DS_Store
+
+# Scraper checkpoints
+jumia_checkpoint.txt
+konga_checkpoint.txt

@@ -1,16 +1,17 @@
+import asyncio
 import time
 import os
 import psycopg2
 import requests
 from datetime import datetime, UTC
 from dotenv import load_dotenv
-from jumia_category_scraper import get_category_products
-from jumia_detail_scraper import scrape_product
+from konga_category_scraper import scrape_konga_category
+from konga_detail_scraper import scrape_product_detail
 
-# Load environment variables from .env at project root
+# Load environment variables from .env
 load_dotenv()
 
-CHECKPOINT_FILE = "jumia_checkpoint.txt"
+CHECKPOINT_FILE = "konga_checkpoint.txt"
 
 # --- Safe request wrapper ---
 def safe_get(url, headers=None, retries=3, backoff=5):
@@ -60,8 +61,8 @@ def save_one_to_postgres(item):
     conn.close()
 
 # --- Main scrape loop with checkpointing ---
-def scrape_category_with_details(category_url, max_pages=1):
-    products = get_category_products(category_url, max_pages=max_pages)
+async def run_pipeline(category_url, n_pages=3):
+    category_products = await scrape_konga_category(category_url, n_pages=n_pages)
 
     # Resume from checkpoint if exists
     start_index = 0
@@ -69,40 +70,43 @@ def scrape_category_with_details(category_url, max_pages=1):
         with open(CHECKPOINT_FILE, "r") as f:
             start_index = int(f.read().strip() or 0)
 
-    print(f"Starting scrape at index {start_index}/{len(products)}")
+    print(f"Starting scrape at index {start_index}/{len(category_products)}")
 
-    for i, product in enumerate(products[start_index:], start=start_index):
-        print(f"\nScraping detail page {i+1}/{len(products)}: {product['url']}")
+    for i, item in enumerate(category_products[start_index:], start=start_index):
+        print(f"\n🔍 Scraping detail page {i+1}/{len(category_products)}: {item['url']}")
+        detail = await scrape_product_detail(item["url"])
 
-        details = scrape_product(product["url"])
-        current_price = normalize_price(details.get("price"))
-        old_price = normalize_price(details.get("old_price"))
+        if detail.get("title"):
+            current_price = normalize_price(detail.get("current_price"))
+            old_price = normalize_price(detail.get("old_price"))
 
-        discount = None
-        if current_price and old_price and old_price > current_price:
-            percent = round((old_price - current_price) / old_price * 100)
-            discount = f"{percent}%"
+            discount = None
+            if current_price and old_price and old_price > current_price:
+                percent = round((old_price - current_price) / old_price * 100)
+                discount = f"{percent}%"
 
-        merged = {
-            **product,
-            **details,
-            "price": current_price,
-            "old_price": old_price,
-            "discount": discount,
-            "scraped_at": datetime.now(UTC).isoformat(),
-            "source": "jumia"
-        }
+            merged = {
+                **item,
+                **detail,
+                "price": current_price,
+                "old_price": old_price,
+                "discount": discount,
+                "scraped_at": datetime.now(UTC).isoformat(),
+                "source": "konga"
+            }
 
-        save_one_to_postgres(merged)
+            save_one_to_postgres(merged)
+        else:
+            print(f"⚠️ Skipping product due to missing detail: {item['url']}")
 
         # Update checkpoint
         with open(CHECKPOINT_FILE, "w") as f:
             f.write(str(i+1))
 
-        time.sleep(2)  # be polite
+        time.sleep(2)
 
-    print("Scraping complete ✅")
+    print("✅ Scraping complete")
 
 if __name__ == "__main__":
-    category_url = "https://www.jumia.com.ng/phones-tablets/"
-    scrape_category_with_details(category_url, max_pages=3)
+    category_url = "https://www.konga.com/category/phones-tablets-5294"
+    asyncio.run(run_pipeline(category_url, n_pages=3))
