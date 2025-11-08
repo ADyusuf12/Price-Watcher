@@ -1,0 +1,6 @@
+class AddDefaultsToProductsTimestamps < ActiveRecord::Migration[8.0]
+  def change
+    change_column_default :products, :created_at, -> { 'CURRENT_TIMESTAMP' }
+    change_column_default :products, :updated_at, -> { 'CURRENT_TIMESTAMP' }
+  end
+end
