@@ -1,4 +1,5 @@
 version: "3.9"
+
 services:
   api:
     build:
@@ -26,6 +27,21 @@ services:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - api
+
+  scraper:
+    build:
+      context: .
+      dockerfile: Dockerfile.scraper
+    volumes:
+      - .:/app
+    environment:
+      - DB_NAME=pricewatcher_dev
+      - DB_USER=postgres
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
 
   db:
     image: postgres:15
