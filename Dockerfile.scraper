@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
+
+# Install Playwright browsers
+RUN playwright install --with-deps
+
+# Copy all code (scrapers, etc.)
+COPY . .
